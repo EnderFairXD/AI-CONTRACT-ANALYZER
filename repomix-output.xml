@@ -1,0 +1,167 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+src/
+  services/
+    ai_service.py
+  utils/
+    pdf_parser.py
+  main.py
+requirements.txt
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/services/ai_service.py">
+import os
+from dotenv import load_dotenv
+from langchain_community.llms import Ollama
+from langchain.prompts import PromptTemplate
+
+load_dotenv()
+
+def analyze_contract(contract_text: str) -> str:
+    """Envía el texto del contrato a tu servidor local de Ollama."""
+    
+    base_url = os.getenv("OLLAMA_BASE_URL", "http://192.168.1.134:11434")
+    
+    # 🔧 TOQUE SENIOR: Aumentamos el num_ctx a 8192 (aprox 6000 palabras / 12 páginas).
+    # Si tu servidor tiene mucha RAM/VRAM, puedes subirlo a 16384 o 32768.
+    llm = Ollama(
+        base_url=base_url,
+        model="llama3.1", # o "mistral"
+        temperature=0.2,
+        num_ctx=8192 
+    )
+    
+    template = """
+    Eres un abogado experto y analista de riesgos. Analiza el siguiente contrato y proporciona un informe estructurado en Markdown con las siguientes secciones en español:
+    
+    1. **Resumen automático**: Un resumen de 3-4 líneas sobre de qué trata el contrato.
+    2. **Cláusulas importantes**: Viñetas con las 3 o 4 cláusulas más críticas.
+    3. **Riesgos potenciales**: Identifica cualquier trampa, penalización o riesgo oculto para las partes.
+    4. **Explicación en lenguaje sencillo**: Explica el contrato como si se lo estuvieras contando a un adolescente de 15 años.
+
+    Texto del contrato:
+    {texto}
+    """
+    
+    prompt = PromptTemplate(input_variables=["texto"], template=template)
+    chain = prompt | llm
+    
+    return chain.invoke({"texto": contract_text})
+</file>
+
+<file path="src/utils/pdf_parser.py">
+import pdfplumber
+
+def extract_text_from_pdf(pdf_file) -> str:
+    """Extrae todo el texto de un archivo PDF subido."""
+    text = ""
+    with pdfplumber.open(pdf_file) as pdf:
+        for page in pdf.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+    return text
+</file>
+
+<file path="src/main.py">
+import streamlit as st
+import re
+from utils.pdf_parser import extract_text_from_pdf
+from services.ai_service import analyze_contract
+
+st.set_page_config(page_title="Analizador de Contratos IA", page_icon="⚖️", layout="wide")
+
+st.title("⚖️ Analizador de Contratos con IA (Local y Privado)")
+st.markdown("Sube un contrato en PDF. El documento **nunca saldrá de tu red local**, garantizando 100% de privacidad.")
+
+uploaded_file = st.file_uploader("Sube tu contrato (PDF)", type="pdf")
+
+if uploaded_file is not None:
+    st.info("📄 PDF cargado correctamente en memoria.")
+    
+    if st.button("🚀 Iniciar Análisis de Riesgos"):
+        
+        # Usamos st.status para mostrar un progreso paso a paso
+        with st.status("Procesando el documento...", expanded=True) as status:
+            try:
+                st.write("Extraeciendo texto del PDF...")
+                raw_text = extract_text_from_pdf(uploaded_file)
+                
+                if not raw_text.strip():
+                    status.update(label="Error en la lectura", state="error", expanded=True)
+                    st.error("El PDF está vacío o es una imagen escaneada sin OCR.")
+                else:
+                    # 🔧 TOQUE SENIOR: Limpieza básica de texto para ahorrar tokens
+                    st.write("Optimizando texto (eliminando espacios muertos)...")
+                    clean_text = re.sub(r'\n+', '\n', raw_text) # Quita saltos de línea dobles
+                    clean_text = re.sub(r'\s+', ' ', clean_text) # Quita espacios múltiples
+                    
+                    st.write("Enviando al servidor local (Ollama) para análisis legal. Esto puede tardar...")
+                    
+                    # Llamada a la IA
+                    resultado = analyze_contract(clean_text)
+                    
+                    status.update(label="¡Análisis completado con éxito!", state="complete", expanded=False)
+                    
+                    # Mostrar resultados
+                    st.markdown("---")
+                    st.markdown("### 📋 Informe Legal IA")
+                    st.markdown(resultado)
+                    
+            except Exception as e:
+                status.update(label="Ocurrió un error", state="error", expanded=True)
+                st.error(f"Error técnico: {str(e)}")
+</file>
+
+<file path="requirements.txt">
+streamlit==1.32.0
+langchain==0.1.13
+langchain-openai==0.1.1
+pdfplumber==0.11.0
+python-dotenv==1.0.1
+</file>
+
+</files>
