@@ -10,3 +10,5 @@ __pycache__/
 
 # Archivos de entorno privado
 .env
+# Volcado generado de código
+repomix-output.xml
