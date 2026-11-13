@@ -1,5 +1,7 @@
 # Analizador de Contratos IA (Local)
 
+> **Este proyecto continúa en [suite-ia-local](https://github.com/EnderFairXD/suite-ia-local)**, que junta las cinco herramientas de IA local (contratos, documentación, correo, reuniones y estudio) con código común, tests y soporte para textos largos. Este repositorio queda archivado como referencia.
+
 Una aplicación web construida con Streamlit y LangChain que utiliza modelos locales a través de Ollama para analizar contratos legales en PDF, garantizando un 100% de privacidad sin enviar datos a la nube.
 
 ## Requisitos Previos
